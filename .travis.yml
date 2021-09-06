@@ -1,0 +1,25 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  # ./client is the context - look for files that make up the image there
+  - docker build -t afaque205/react-test -f ./client/Dockerfile.dev ./client 
+
+script:
+  # CI=true will make the script exit with status code 0, otherwise travis
+  # will consider the build as failed
+  - docker run -e CI=true afaque205/react-test npm test
+
+after_success:
+  - docker build -t afaque205/multi-client ./client
+  - docker build -t afaque205/multi-nginx ./nginx
+  - docker build -t afaque205/multi-server ./server
+  - docker build -t afaque205/multi-worker ./worker
+  # login to docker cli
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # push images to docker hub
+  - docker push afaque205/multi-client
+  - docker push afaque205/multi-nginx
+  - docker push afaque205/multi-server
+  - docker push afaque205/multi-worker
